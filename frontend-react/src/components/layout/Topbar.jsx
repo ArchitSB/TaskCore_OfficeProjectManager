@@ -20,11 +20,11 @@ export function Topbar({ title }) {
         <Button variant="icon" icon="settings" />
         <div className="w-px h-6 bg-[#2A3441]"></div>
         <div className="flex items-center gap-sm">
-          <Avatar 
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBe8K8CSv13OmN-1_fxVqLAke7MHByVgpj3NgMaaIsAnPWYuNtPXTGPHwVGM8Z9Pb0DEyiB3Sd7I2feKcUjl47Ethl1Q307sHM0hKfmf_IAbk0jDfUOCr2Km_PBgON1qL4z-eqxbAK3a5j5IbT0BIuddBCdriKMqwP0ebAn2b81iPwEmExzkm9IUIooyh_z4DIl68bHS9REqJJDG2-ZXGbaCXVHhBzQG6wGr-IgTwMOcjBwLHKHXs7eFEENb6lf1W75FchmiFr5Yw" 
+          <Avatar
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBe8K8CSv13OmN-1_fxVqLAke7MHByVgpj3NgMaaIsAnPWYuNtPXTGPHwVGM8Z9Pb0DEyiB3Sd7I2feKcUjl47Ethl1Q307sHM0hKfmf_IAbk0jDfUOCr2Km_PBgON1qL4z-eqxbAK3a5j5IbT0BIuddBCdriKMqwP0ebAn2b81iPwEmExzkm9IUIooyh_z4DIl68bHS9REqJJDG2-ZXGbaCXVHhBzQG6wGr-IgTwMOcjBwLHKHXs7eFEENb6lf1W75FchmiFr5Yw"
             alt="Profile Avatar"
           />
-          <span className="font-body-sm text-xs font-semibold">{user.name}</span>
+          <span className="font-body-sm text-xs font-semibold">{user?.name || 'User'}</span>
         </div>
       </div>
     </header>

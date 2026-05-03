@@ -1,46 +1,122 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ProjectCard } from '../components/project/ProjectCard';
 import { Button } from '../components/ui/Button';
+import {
+  addProjectMemberRequest,
+  createProjectRequest,
+  getProjectsRequest,
+} from '../api/projects.api';
+import { getApiErrorMessage } from '../utils/error';
+import { useAuth } from '../context/AuthContext';
 
-// Dummy project data
-const INITIAL_PROJECTS = [
-  {
-    id: 1,
-    title: 'Neural Engine Core',
+const toProjectCardView = (project) => {
+  const members = Array.isArray(project.members) ? project.members : [];
+
+  return {
+    id: project._id,
+    title: project.name,
     status: 'In Flight',
-    description: 'Optimizing inference pathways for low-latency edge deployments on mobile hardware.',
-    progress: 72,
-    team: [
-      { avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD7HvZZwKqdqu6QpuVgp4KPlRIQJj0jG7nP2SgxWZF0r_KEuuS1ZlL39GxTR8q3bz87JnxHz81tXdmce7AoEymOZ0jowbGdBzaPfZs39Koi6Pj9l3OARk7NwzbLhBAzgPjmYVCZfrhkFWZeF7zT3AMavTt3Whcx-ZVkeyX5aaSLq06dk_txNFbWBQkLmH4WRApLp7lmHMemZFLT-iBF1a2nt_CIwHOduMAFrWdc4K3Ilj5XaSsZpyKWNg0vMEMfyhTqm9cWLCWBcA' }
-    ]
-  },
-  {
-    id: 2,
-    title: 'Data Visualizer v4',
-    status: 'Paused',
-    description: 'Complete overhaul of the telemetry dashboard with GPU-accelerated rendering.',
-    progress: 34,
-    team: [
-      { avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBGDhQg1Qwz2K1b4h3-PpF9ZRCnYdYKxEqz7m5aaJo3MuaV4cfeYNwgC_EfFN1f2-rHiUUyUFtKvIEPYmf9F-Vh-EhPmtvZytYWNqbMVHcKaOkXFE2fxtxt2uTdBEwXRUpnEF8tkBN61FdrCn3g_kcBWHIosggTLHcEwuTZtg2ZG1iK4-_ufkq8lC1SipoqF_ZixCgrTEOU1Z60mrBGzRwgphBJd5TLUZJPA_Vw9k5SUS5G8mF_YsK_N1Z01qZEbzablglpW8zFrw' }
-    ]
-  }
-];
+    description: project.description || 'No description provided.',
+    progress: 0,
+    team: members.length
+      ? members.map((member) => ({
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name || 'User')}&background=0f172a&color=f59e0b`,
+        }))
+      : [{ avatar: 'https://ui-avatars.com/api/?name=Team&background=1f2937&color=f59e0b' }],
+  };
+};
 
 function Projects() {
+  const { user } = useAuth();
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const isAdmin = user?.role === 'admin';
+
+  const loadProjects = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await getProjectsRequest();
+      setProjects(response.data || []);
+    } catch (apiError) {
+      setError(getApiErrorMessage(apiError, 'Unable to load projects'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProjects();
+  }, []);
+
+  const handleCreateProject = async () => {
+    const name = window.prompt('Project name:');
+    if (!name) return;
+
+    const description = window.prompt('Project description:') || '';
+
+    try {
+      await createProjectRequest({ name, description });
+      await loadProjects();
+    } catch (apiError) {
+      setError(getApiErrorMessage(apiError, 'Unable to create project'));
+    }
+  };
+
+  const handleAddMember = async () => {
+    const projectId = window.prompt('Project ID:');
+    if (!projectId) return;
+
+    const userId = window.prompt('User ID to add:');
+    if (!userId) return;
+
+    try {
+      await addProjectMemberRequest(projectId, userId);
+      await loadProjects();
+    } catch (apiError) {
+      setError(getApiErrorMessage(apiError, 'Unable to add member to project'));
+    }
+  };
+
+  const projectCards = useMemo(() => projects.map(toProjectCardView), [projects]);
+
   return (
     <>
-      <header className="mb-xl flex items-end justify-between">
+      <header className="mb-xl flex items-end justify-between gap-sm">
         <div>
           <h1 className="font-h1 text-h1 text-on-surface mb-xs">Projects Archive</h1>
           <p className="font-body-sm text-body-sm text-on-secondary-container">Manage ongoing initiatives and team resources.</p>
         </div>
-        <Button variant="primary" icon="add">New Project</Button>
+        <div className="flex items-center gap-sm">
+          {isAdmin && (
+            <Button type="button" variant="secondary" onClick={handleAddMember}>
+              Add Member
+            </Button>
+          )}
+          <Button type="button" variant="primary" icon="add" onClick={handleCreateProject} disabled={!isAdmin}>
+            New Project
+          </Button>
+        </div>
       </header>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
-        {INITIAL_PROJECTS.map(project => (
-          <ProjectCard key={project.id} project={project} />
-        ))}
-      </div>
+
+      {error && (
+        <div className="mb-md rounded border border-red-500/40 bg-red-900/20 text-red-300 text-sm px-md py-sm">
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="text-slate-400 text-sm">Loading projects...</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
+          {projectCards.map((project) => (
+            <ProjectCard key={project.id} project={project} />
+          ))}
+        </div>
+      )}
     </>
   );
 }

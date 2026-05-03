@@ -1,19 +1,113 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getProjectsRequest } from '../api/projects.api';
+import { getTasksRequest, updateTaskStatusRequest } from '../api/tasks.api';
+import { getApiErrorMessage } from '../utils/error';
 
-// Dummy task data
-const INITIAL_TASKS = [
-  { id: 'TC-402', title: 'Implement WebSocket provider for real-time board updates', status: 'todo', priority: 'critical', assignee: 'JS', date: 'Jul 24' },
-  { id: 'TC-391', title: 'Database migration script for v2 schema optimization', status: 'todo', priority: 'backlog', assignee: 'AK', date: 'Jul 22', active: true, comments: 12 },
-  { id: 'TC-215', title: 'API Gateway refactor for microservices architecture', status: 'in_progress', priority: 'high', assignee: 'Arjun K.', progress: 65, avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBa9qupZlZkAnetPuVt0r1I7fjcKg9XIU1eXJD1b8nLb7HWxmyEK-tPaGjmtv9_sYe0doPjvSDYpaWMpEvNmEY9YObfs2mPhGRDg-2WBZ7lXq7SPdGsxl3Z_65kh7vqQ2IFco-7xt7r4nq9dQM7GQp9pvogNSFqiB3oENQm_g4yIsn1uTsiubj_qJG72gX0QIiixGHgiQOind9XF-KGGnyCUorGgHdzyNIHMBNZViqxoraNwWbX-e6aKkdoXk2j566eviZEByvgZg' },
-  { id: 'TC-201', title: 'Update marketing site assets for Q3 launch', status: 'done', priority: 'low', assignee: 'M', date: 'Jul 15' },
-];
+const toInitials = (name = '') =>
+  name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('');
+
+const toTaskView = (task) => ({
+  id: task._id,
+  title: task.title,
+  description: task.description || '',
+  status: task.status,
+  priority: task.priority,
+  dueDateISO: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : '',
+  assignedToId: task.assignedTo?._id || '',
+  assignee: toInitials(task.assignedTo?.name || 'U'),
+  date: task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '',
+  fullAssignee: task.assignedTo?.name || 'Unassigned',
+});
 
 export function useTasks() {
-  const [tasks, setTasks] = useState(INITIAL_TASKS);
+  const [tasks, setTasks] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const getTasksByStatus = (status) => tasks.filter(t => t.status === status);
+  const loadProjects = useCallback(async () => {
+    const response = await getProjectsRequest();
+    const loadedProjects = response.data || [];
+    setProjects(loadedProjects);
 
-  const addTask = (task) => setTasks([...tasks, { ...task, id: `TC-${Math.floor(Math.random() * 1000)}` }]);
+    if (!selectedProjectId && loadedProjects.length > 0) {
+      setSelectedProjectId(loadedProjects[0]._id);
+    }
+  }, [selectedProjectId]);
 
-  return { tasks, getTasksByStatus, addTask };
+  const loadTasks = useCallback(async (projectId = selectedProjectId) => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await getTasksRequest(projectId || '');
+      setTasks((response.data || []).map(toTaskView));
+    } catch (apiError) {
+      setError(getApiErrorMessage(apiError, 'Unable to load tasks'));
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedProjectId]);
+
+  useEffect(() => {
+    const bootstrap = async () => {
+      try {
+        await loadProjects();
+      } catch (apiError) {
+        setError(getApiErrorMessage(apiError, 'Unable to load projects for tasks board'));
+        setLoading(false);
+      }
+    };
+
+    bootstrap();
+  }, [loadProjects]);
+
+  useEffect(() => {
+    loadTasks(selectedProjectId);
+  }, [selectedProjectId, loadTasks]);
+
+  const getTasksByStatus = useCallback((status) => tasks.filter((task) => task.status === status), [tasks]);
+
+  const updateTaskStatus = useCallback(async (taskId, nextStatus) => {
+    const previousTasks = tasks;
+
+    setTasks((currentTasks) =>
+      currentTasks.map((task) => (task.id === taskId ? { ...task, status: nextStatus } : task))
+    );
+
+    try {
+      await updateTaskStatusRequest(taskId, nextStatus);
+    } catch (apiError) {
+      setTasks(previousTasks);
+      setError(getApiErrorMessage(apiError, 'Unable to update task status'));
+    }
+  }, [tasks]);
+
+  const clearTasksByStatus = useCallback((status) => {
+    setTasks((currentTasks) => currentTasks.filter((task) => task.status !== status));
+  }, []);
+
+  const projectOptions = useMemo(
+    () => projects.map((project) => ({ id: project._id, name: project.name })),
+    [projects]
+  );
+
+  return {
+    tasks,
+    loading,
+    error,
+    projectOptions,
+    selectedProjectId,
+    setSelectedProjectId,
+    getTasksByStatus,
+    updateTaskStatus,
+    clearTasksByStatus,
+    reloadTasks: loadTasks,
+  };
 }

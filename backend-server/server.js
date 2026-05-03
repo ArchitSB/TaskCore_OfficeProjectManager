@@ -11,7 +11,7 @@ const authRoutes = require('./routes/auth.routes');
 const projectRoutes = require('./routes/project.routes');
 const taskRoutes = require('./routes/task.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
-const { errorHandler, notFoundHandler } = require('./utils/errorHandler');
+const { errorHandler } = require('./utils/errorHandler');
 
 const app = express();
 
@@ -32,12 +32,15 @@ app.get('/health', (req, res) => {
   });
 });
 
-app.use('/auth', authRoutes);
-app.use('/projects', projectRoutes);
-app.use('/tasks', taskRoutes);
-app.use('/dashboard', dashboardRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
-app.use(notFoundHandler);
+app.use('*', (req, res) => {
+  res.status(404).json({ message: `Route not found: ${req.originalUrl}` });
+});
+
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;

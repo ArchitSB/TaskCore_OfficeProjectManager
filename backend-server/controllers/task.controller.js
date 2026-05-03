@@ -135,7 +135,7 @@ const updateTaskStatus = async (req, res) => {
   }
 
   if (req.user.role !== 'admin' && !task.assignedTo.equals(req.user._id)) {
-    throw new ApiError(403, 'Members can update only their assigned tasks');
+    throw new ApiError(403, 'Forbidden: You can update only your assigned task status');
   }
 
   task.status = status;
@@ -155,6 +155,10 @@ const updateTaskStatus = async (req, res) => {
 const updateTask = async (req, res) => {
   const { id } = req.params;
 
+  if (req.user.role !== 'admin') {
+    throw new ApiError(403, 'Forbidden: Only admin can update task details');
+  }
+
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError(400, 'Invalid task ID');
   }
@@ -165,13 +169,7 @@ const updateTask = async (req, res) => {
     throw new ApiError(404, 'Task not found');
   }
 
-  if (req.user.role !== 'admin' && !task.assignedTo.equals(req.user._id)) {
-    throw new ApiError(403, 'Members can update only their assigned tasks');
-  }
-
-  const memberAllowedFields = ['title', 'description', 'status', 'priority', 'dueDate'];
-  const adminAllowedFields = ['title', 'description', 'status', 'priority', 'dueDate', 'assignedTo', 'projectId'];
-  const allowedFields = req.user.role === 'admin' ? adminAllowedFields : memberAllowedFields;
+  const allowedFields = ['title', 'description', 'status', 'priority', 'dueDate', 'assignedTo', 'projectId'];
 
   Object.keys(req.body).forEach((field) => {
     if (allowedFields.includes(field)) {

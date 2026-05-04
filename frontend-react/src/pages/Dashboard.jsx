@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { getDashboardRequest } from '../api/dashboard.api';
 import { getApiErrorMessage } from '../utils/error';
+import { ROUTES } from '../utils/constants';
 
 const EMPTY_DASHBOARD = {
   stats: {
@@ -16,6 +18,7 @@ const EMPTY_DASHBOARD = {
 };
 
 function Dashboard() {
+  const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(EMPTY_DASHBOARD);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -51,6 +54,28 @@ function Dashboard() {
     }));
   }, [dashboardData.activity]);
 
+  const handleExportCSV = () => {
+    const csvContent = [
+      ['Metric', 'Value'],
+      ['Total Tasks', dashboardData.stats.totalTasks],
+      ['Completed Tasks', dashboardData.stats.completed],
+      ['Overdue Tasks', dashboardData.stats.overdue],
+      ['Active Projects', dashboardData.stats.activeProjects]
+    ].map(e => e.join(",")).join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'dashboard-data.csv');
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <>
       <div className="mb-lg flex justify-between items-end">
@@ -59,8 +84,8 @@ function Dashboard() {
           <p className="font-body-sm text-body-sm text-slate-400">Real-time performance metrics and task tracking</p>
         </div>
         <div className="flex gap-sm">
-          <Button variant="secondary">Export CSV</Button>
-          <Button variant="primary" icon="add">New Task</Button>
+          <Button variant="secondary" onClick={handleExportCSV}>Export CSV</Button>
+          <Button variant="primary" icon="add" onClick={() => navigate(ROUTES.TASKS, { state: { openNewTaskModal: true } })}>New Task</Button>
         </div>
       </div>
 

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTasks } from '../hooks/useTasks';
 import { KanbanColumn } from '../components/task/KanbanColumn';
 import { TaskModal } from '../components/task/TaskModal';
@@ -42,14 +43,10 @@ function Tasks() {
   const [selectedEditTaskId, setSelectedEditTaskId] = useState('');
   const [taskForm, setTaskForm] = useState(EMPTY_TASK_FORM);
 
-  const isAdmin = user?.role === 'admin';
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setIsSubmitting(false);
-    setSelectedEditTaskId('');
-    setTaskForm(EMPTY_TASK_FORM);
-  };
+  const isAdmin = user?.role === 'admin';
 
   const openCreateModal = () => {
     if (!selectedProjectId) {
@@ -61,6 +58,25 @@ function Tasks() {
     setModalMode('create');
     setTaskForm(EMPTY_TASK_FORM);
     setIsModalOpen(true);
+  };
+
+  useEffect(() => {
+    if (location.state?.openNewTaskModal) {
+      if (selectedProjectId) {
+        openCreateModal();
+        navigate(location.pathname, { replace: true, state: {} });
+      } else if (projectOptions.length > 0) {
+        setSelectedProjectId(projectOptions[0].id);
+        // Wait for next render where selectedProjectId is set to open modal
+      }
+    }
+  }, [location.state, selectedProjectId, projectOptions, navigate, location.pathname]);
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setIsSubmitting(false);
+    setSelectedEditTaskId('');
+    setTaskForm(EMPTY_TASK_FORM);
   };
 
   const openEditModal = () => {

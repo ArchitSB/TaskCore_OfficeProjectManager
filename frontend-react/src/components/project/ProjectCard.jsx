@@ -1,8 +1,14 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export function ProjectCard({ project }) {
+  const navigate = useNavigate();
+
   return (
-    <div className="bg-[#161D27] border border-[#2A3441] p-md rounded hover:bg-[#1B2430] transition-all duration-150 cursor-pointer group flex flex-col justify-between min-h-[220px]">
+    <div 
+      onClick={() => navigate(`/projects/${project.id}`)}
+      className="bg-[#161D27] border border-[#2A3441] p-md rounded hover:bg-[#1B2430] transition-all duration-150 cursor-pointer group flex flex-col justify-between min-h-[220px]"
+    >
       <div>
         <div className="flex items-start justify-between mb-sm">
           <h3 className="font-h3 text-h3 text-on-surface">{project.title}</h3>

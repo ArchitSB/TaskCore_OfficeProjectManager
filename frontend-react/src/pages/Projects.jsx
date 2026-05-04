@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ProjectCard } from '../components/project/ProjectCard';
+import { ProjectModal } from '../components/project/ProjectModal';
 import { Button } from '../components/ui/Button';
 import {
   addProjectMemberRequest,
@@ -32,6 +33,11 @@ function Projects() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
+  const [modalForm, setModalForm] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const isAdmin = user?.role === 'admin';
 
   const loadProjects = async () => {
@@ -52,32 +58,48 @@ function Projects() {
     loadProjects();
   }, []);
 
-  const handleCreateProject = async () => {
-    const name = window.prompt('Project name:');
-    if (!name) return;
+  const handleModalChange = (e) => {
+    const { name, value } = e.target;
+    setModalForm((prev) => ({ ...prev, [name]: value }));
+  };
 
-    const description = window.prompt('Project description:') || '';
+  const openCreateProjectModal = () => {
+    setModalForm({ name: '', description: '' });
+    setIsProjectModalOpen(true);
+  };
 
+  const openAddMemberModal = () => {
+    setModalForm({ projectId: '', userId: '' });
+    setIsMemberModalOpen(true);
+  };
+
+  const submitProject = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
     try {
-      await createProjectRequest({ name, description });
+      await createProjectRequest({ name: modalForm.name, description: modalForm.description || '' });
       await loadProjects();
+      setIsProjectModalOpen(false);
     } catch (apiError) {
       setError(getApiErrorMessage(apiError, 'Unable to create project'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleAddMember = async () => {
-    const projectId = window.prompt('Project ID:');
-    if (!projectId) return;
-
-    const userId = window.prompt('User ID to add:');
-    if (!userId) return;
-
+  const submitMember = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
     try {
-      await addProjectMemberRequest(projectId, userId);
+      await addProjectMemberRequest(modalForm.projectId, modalForm.userId);
       await loadProjects();
+      setIsMemberModalOpen(false);
     } catch (apiError) {
       setError(getApiErrorMessage(apiError, 'Unable to add member to project'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -92,11 +114,11 @@ function Projects() {
         </div>
         <div className="flex items-center gap-sm">
           {isAdmin && (
-            <Button type="button" variant="secondary" onClick={handleAddMember}>
+            <Button type="button" variant="secondary" onClick={openAddMemberModal}>
               Add Member
             </Button>
           )}
-          <Button type="button" variant="primary" icon="add" onClick={handleCreateProject} disabled={!isAdmin}>
+          <Button type="button" variant="primary" icon="add" onClick={openCreateProjectModal} disabled={!isAdmin}>
             New Project
           </Button>
         </div>
@@ -117,6 +139,42 @@ function Projects() {
           ))}
         </div>
       )}
+
+      <ProjectModal
+        isOpen={isProjectModalOpen}
+        title="New Project"
+        fields={[
+          { name: 'name', label: 'Project Name', type: 'text', required: true },
+          { name: 'description', label: 'Description', type: 'textarea' },
+        ]}
+        form={modalForm}
+        onChange={handleModalChange}
+        onSubmit={submitProject}
+        onClose={() => setIsProjectModalOpen(false)}
+        isSubmitting={isSubmitting}
+        submitLabel="Create Project"
+      />
+
+      <ProjectModal
+        isOpen={isMemberModalOpen}
+        title="Add Team Member"
+        fields={[
+          {
+            name: 'projectId',
+            label: 'Project',
+            type: 'select',
+            required: true,
+            options: projects.map(p => ({ value: p._id, label: p.name }))
+          },
+          { name: 'userId', label: 'User Email or ID', type: 'text', required: true },
+        ]}
+        form={modalForm}
+        onChange={handleModalChange}
+        onSubmit={submitMember}
+        onClose={() => setIsMemberModalOpen(false)}
+        isSubmitting={isSubmitting}
+        submitLabel="Add Member"
+      />
     </>
   );
 }

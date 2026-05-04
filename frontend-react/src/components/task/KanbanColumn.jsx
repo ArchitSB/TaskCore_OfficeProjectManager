@@ -16,6 +16,11 @@ export function KanbanColumn({
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuContainerRef = useRef(null);
+  
+  // Local state for inline renaming
+  const [isEditingColumnName, setIsEditingColumnName] = useState(false);
+  const [columnName, setColumnName] = useState(title);
+  const [tempName, setTempName] = useState(title);
 
   const handleDrop = (event) => {
     event.preventDefault();
@@ -70,7 +75,8 @@ export function KanbanColumn({
   const resolvedColumnId = columnId || status;
 
   const handleRename = () => {
-    console.log('Rename column clicked', resolvedColumnId);
+    setTempName(columnName);
+    setIsEditingColumnName(true);
     closeMenu();
   };
 
@@ -95,7 +101,30 @@ export function KanbanColumn({
     >
       <div className="flex items-center justify-between px-xs">
         <div className="flex items-center gap-sm">
-          <h3 className="font-h3 text-h3 text-slate-100">{title}</h3>
+          {isEditingColumnName ? (
+            <input
+              type="text"
+              value={tempName}
+              onChange={(e) => setTempName(e.target.value)}
+              onBlur={() => {
+                setColumnName(tempName);
+                setIsEditingColumnName(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setColumnName(tempName);
+                  setIsEditingColumnName(false);
+                } else if (e.key === 'Escape') {
+                  setTempName(columnName);
+                  setIsEditingColumnName(false);
+                }
+              }}
+              autoFocus
+              className="font-h3 text-h3 text-slate-100 bg-transparent border-b border-amber-500 outline-none w-full"
+            />
+          ) : (
+            <h3 className="font-h3 text-h3 text-slate-100">{columnName}</h3>
+          )}
           <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${badgeColor}`}>
             {count}
           </span>

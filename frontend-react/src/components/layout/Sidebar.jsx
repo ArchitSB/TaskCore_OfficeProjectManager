@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 const NAV_ITEMS = [
   { path: ROUTES.DASHBOARD, icon: 'grid_view', label: 'Dashboard' },
   { path: ROUTES.PROJECTS, icon: 'account_tree', label: 'Projects' },
-  { path: '#', icon: 'groups', label: 'Team' },
+  { path: ROUTES.TEAM, icon: 'groups', label: 'Team' },
   { path: ROUTES.TASKS, icon: 'inventory_2', label: 'Backlog' },
 ];
 

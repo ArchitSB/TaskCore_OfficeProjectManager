@@ -9,6 +9,7 @@ import {
 } from '../api/projects.api';
 import { getApiErrorMessage } from '../utils/error';
 import { useAuth } from '../context/AuthContext';
+import { isAdmin } from '../utils/permissions';
 
 const toProjectCardView = (project) => {
   const members = Array.isArray(project.members) ? project.members : [];
@@ -37,8 +38,6 @@ function Projects() {
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [modalForm, setModalForm] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const isAdmin = user?.role === 'admin';
 
   const loadProjects = async () => {
     setLoading(true);
@@ -113,14 +112,16 @@ function Projects() {
           <p className="font-body-sm text-body-sm text-on-secondary-container">Manage ongoing initiatives and team resources.</p>
         </div>
         <div className="flex items-center gap-sm">
-          {isAdmin && (
-            <Button type="button" variant="secondary" onClick={openAddMemberModal}>
-              Add Member
-            </Button>
+          {isAdmin(user) && (
+            <>
+              <Button type="button" variant="secondary" onClick={openAddMemberModal}>
+                Add Member
+              </Button>
+              <Button type="button" variant="primary" icon="add" onClick={openCreateProjectModal}>
+                New Project
+              </Button>
+            </>
           )}
-          <Button type="button" variant="primary" icon="add" onClick={openCreateProjectModal} disabled={!isAdmin}>
-            New Project
-          </Button>
         </div>
       </header>
 

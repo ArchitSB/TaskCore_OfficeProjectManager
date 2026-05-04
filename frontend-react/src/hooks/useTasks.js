@@ -47,7 +47,9 @@ export function useTasks() {
 
     try {
       const response = await getTasksRequest(projectId || '');
-      setTasks((response.data || []).map(toTaskView));
+      const mappedTasks = (response.data || []).map(toTaskView);
+      console.log("Tasks after fetch:", mappedTasks);
+      setTasks(mappedTasks);
     } catch (apiError) {
       setError(getApiErrorMessage(apiError, 'Unable to load tasks'));
     } finally {

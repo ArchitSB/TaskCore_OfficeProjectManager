@@ -1,14 +1,18 @@
 import React from 'react';
 
-export function TaskCard({ task, onDragStartTask }) {
+export function TaskCard({ task, onDragStartTask, isAdmin }) {
   const isCritical = task.priority === 'critical';
   const isHigh = task.priority === 'high';
 
   return (
     <div
-      className="bg-[#121821] border border-[#2A3441] p-lg hover:bg-[#161D27] transition-all duration-200 group relative rounded cursor-grab"
-      draggable
+      className={`bg-[#121821] border border-[#2A3441] p-lg transition-all duration-200 group relative rounded ${isAdmin ? 'hover:bg-[#161D27] cursor-grab' : ''}`}
+      draggable={isAdmin}
       onDragStart={(event) => {
+        if (!isAdmin) {
+          event.preventDefault();
+          return;
+        }
         event.dataTransfer.setData('text/task-id', task.id);
         if (typeof onDragStartTask === 'function') {
           onDragStartTask(task);
@@ -44,7 +48,7 @@ export function TaskCard({ task, onDragStartTask }) {
           {task.status === 'done' && (
             <span className="material-symbols-outlined text-amber-500 text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
           )}
-          {task.status !== 'done' && (
+          {task.status !== 'done' && isAdmin && (
             <span className="material-symbols-outlined text-[18px]">drag_indicator</span>
           )}
         </div>

@@ -1,17 +1,76 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Avatar } from '../components/ui/Avatar';
 import { ProfileModal } from '../components/auth/ProfileModal';
-
-// Mock data for the team members
-const TEAM_MEMBERS = [
-  { id: 1, name: 'Alex Rivera', role: 'Engineering Lead', status: 'Active', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBe8K8CSv13OmN-1_fxVqLAke7MHByVgpj3NgMaaIsAnPWYuNtPXTGPHwVGM8Z9Pb0DEyiB3Sd7I2feKcUjl47Ethl1Q307sHM0hKfmf_IAbk0jDfUOCr2Km_PBgON1qL4z-eqxbAK3a5j5IbT0BIuddBCdriKMqwP0ebAn2b81iPwEmExzkm9IUIooyh_z4DIl68bHS9REqJJDG2-ZXGbaCXVHhBzQG6wGr-IgTwMOcjBwLHKHXs7eFEENb6lf1W75FchmiFr5Yw' },
-  { id: 2, name: 'Marcus J.', role: 'Senior Frontend Engineer', status: 'Active', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB0Y37k6VUE5jR2K76DrH1eXGGvqDm7B5Lc9s_eXqvbpp7TtffXeS6B_lLrnq-h99_nj255I7j3qZe7nrQTGU0eFNv8KsptBbI7TCDwLvyhMdTVxLqEt_wciC3XYkM9MPyltmdxwUMsjnzlXjzZVTmN9yMdG9PpRaWtHhX_wTHt27skXddzxIR9m4XHWmPsSj-0OluP7iuMWVi7T9zi5mN4iQL8kCRlpZiIjlj9V9D9HfGHHHBNCjCdfWOYUf5ZjO8eGZDYIFLgCw' },
-  { id: 3, name: 'Sarah C.', role: 'Backend Engineer', status: 'Offline', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD0zaukvnKbJvU7UMDagFmUc09SPAH_OKmnSTxvVctTxXjw9_4q5oK-TuQIfzwRx7v83FuJOgNiGqg6quQVFRA-Oxo5-qT5kKU7dOfjJh_J0wSVX80qrhJR1lEY3GyI1-CuYNs8nokJDfF3n6JajZQLXxxQuTxSbz-xSxDA9nHafAYJmOmf4CRIiBR6gM23Xq2Wj0rmjeyCnFtpdmIjSOTnBDAxLFiWtYZ8XkBU2xA--4S2l9Qk-gQPmbxCXRx_JkLWMHsHNraP2w' }
-];
+import { getProjectsRequest } from '../api/projects.api';
+import { getApiErrorMessage } from '../utils/error';
+import { useAuth } from '../context/AuthContext';
 
 function Team() {
+  const { user } = useAuth();
   const [selectedMember, setSelectedMember] = useState(null);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchTeam = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const response = await getProjectsRequest();
+        const projects = response.data || [];
+        
+        const userMap = new Map();
+        
+        if (user && user._id) {
+          userMap.set(user._id, {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            status: 'Active',
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=0f172a&color=f59e0b`
+          });
+        }
+        
+        projects.forEach(project => {
+          if (Array.isArray(project.members)) {
+            project.members.forEach(member => {
+              if (member && member._id && !userMap.has(member._id)) {
+                userMap.set(member._id, {
+                  _id: member._id,
+                  name: member.name,
+                  email: member.email,
+                  role: member.role || 'member',
+                  status: 'Active',
+                  avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name || 'User')}&background=0f172a&color=f59e0b`
+                });
+              }
+            });
+          }
+          if (project.createdBy && project.createdBy._id && !userMap.has(project.createdBy._id)) {
+            userMap.set(project.createdBy._id, {
+              _id: project.createdBy._id,
+              name: project.createdBy.name,
+              email: project.createdBy.email,
+              role: project.createdBy.role || 'admin',
+              status: 'Active',
+              avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(project.createdBy.name || 'User')}&background=0f172a&color=f59e0b`
+            });
+          }
+        });
+        
+        setTeamMembers(Array.from(userMap.values()));
+      } catch (err) {
+        setError(getApiErrorMessage(err, 'Unable to load team members'));
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchTeam();
+  }, [user]);
 
   return (
     <>
@@ -23,26 +82,41 @@ function Team() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
-          {TEAM_MEMBERS.map(member => (
-            <Card 
-              key={member.id} 
-              className="flex flex-col p-md hover:border-amber-500/50 hover:bg-[#1B2430] transition-colors cursor-pointer"
-              onClick={() => setSelectedMember(member)}
-            >
-              <div className="flex items-center gap-md">
-                <div className="relative">
-                  <Avatar src={member.avatar} alt={member.name} className="w-12 h-12" />
-                  <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-[#161D27] rounded-full ${member.status === 'Active' ? 'bg-green-500' : 'bg-slate-500'}`}></span>
+        {error && (
+          <div className="mb-md rounded border border-red-500/40 bg-red-900/20 text-red-300 text-sm px-md py-sm">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="text-slate-400 text-sm">Loading team...</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
+            {teamMembers.map(member => (
+              <Card 
+                key={member._id} 
+                className="flex flex-col p-md hover:border-amber-500/50 hover:bg-[#1B2430] transition-colors cursor-pointer"
+                onClick={() => setSelectedMember(member)}
+              >
+                <div className="flex items-center gap-md">
+                  <div className="relative">
+                    <Avatar src={member.avatar} alt={member.name} className="w-12 h-12" />
+                    <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-[#161D27] rounded-full ${member.status === 'Active' ? 'bg-green-500' : 'bg-slate-500'}`}></span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-on-surface text-lg flex items-center gap-2">
+                      {member.name}
+                      <span className={`px-2 py-0.5 text-[10px] uppercase font-bold rounded ${member.role === 'admin' ? 'bg-amber-900/50 text-amber-500' : 'bg-slate-800 text-slate-400'}`}>
+                        {member.role}
+                      </span>
+                    </span>
+                    <span className="text-sm text-slate-400">{member.email}</span>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="font-semibold text-on-surface text-lg">{member.name}</span>
-                  <span className="text-sm text-slate-400">{member.role}</span>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       <ProfileModal

@@ -7,6 +7,7 @@ import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { ProfileModal } from '../auth/ProfileModal';
 import { SettingsModal } from '../auth/SettingsModal';
+import { NotificationsModal } from './NotificationsModal';
 
 export function Topbar({ title }) {
   const { user, logout } = useAuth();
@@ -16,6 +17,14 @@ export function Topbar({ title }) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
+  
+  const [notifications, setNotifications] = useState([
+    { id: 1, message: '5 tasks are overdue', time: '2h ago', icon: 'warning', color: 'text-error', read: false },
+    { id: 2, message: '3 high priority tasks need attention', time: '4h ago', icon: 'priority_high', color: 'text-amber-500', read: false },
+    { id: 3, message: 'Project deadline approaching', time: '1d ago', icon: 'schedule', color: 'text-blue-400', read: false },
+  ]);
+
   const dropdownRef = useRef(null);
   const notificationsRef = useRef(null);
 
@@ -40,11 +49,11 @@ export function Topbar({ title }) {
     navigate(ROUTES.SIGN_IN, { replace: true });
   };
 
-  const MOCK_NOTIFICATIONS = [
-    { id: 1, message: '5 tasks are overdue', time: '2h ago', icon: 'warning', color: 'text-error' },
-    { id: 2, message: '3 high priority tasks need attention', time: '4h ago', icon: 'priority_high', color: 'text-amber-500' },
-    { id: 3, message: 'Project deadline approaching', time: '1d ago', icon: 'schedule', color: 'text-blue-400' },
-  ];
+  const handleMarkAllRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <header className="w-full h-14 bg-[#121821] border-b border-[#2A3441] flex items-center justify-between px-lg sticky top-0 z-40">
@@ -56,33 +65,54 @@ export function Topbar({ title }) {
       </div>
       <div className="flex items-center gap-md relative">
         <div className="relative" ref={notificationsRef}>
-          <Button 
-            variant="icon" 
-            icon="notifications" 
-            onClick={() => {
-              setIsNotificationsOpen(!isNotificationsOpen);
-              if (isDropdownOpen) setIsDropdownOpen(false);
-            }} 
-          />
+          <div className="relative">
+            <Button 
+              variant="icon" 
+              icon="notifications" 
+              onClick={() => {
+                setIsNotificationsOpen(!isNotificationsOpen);
+                if (isDropdownOpen) setIsDropdownOpen(false);
+              }} 
+            />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full pointer-events-none"></span>
+            )}
+          </div>
           {isNotificationsOpen && (
             <div className="absolute right-0 mt-2 w-80 rounded-md shadow-2xl bg-[#161D27] ring-1 ring-black ring-opacity-5 border border-[#2A3441] z-50 origin-top-right transition-all duration-200">
               <div className="px-4 py-3 border-b border-[#2A3441] flex justify-between items-center">
                 <h3 className="text-sm font-bold text-slate-100">Notifications</h3>
-                <span className="text-[10px] text-amber-500 uppercase tracking-widest font-bold cursor-pointer">Mark all read</span>
+                <span 
+                  className="text-[10px] text-amber-500 uppercase tracking-widest font-bold cursor-pointer hover:text-amber-400"
+                  onClick={handleMarkAllRead}
+                >
+                  Mark all read
+                </span>
               </div>
               <div className="max-h-80 overflow-y-auto custom-scrollbar">
-                {MOCK_NOTIFICATIONS.map((note) => (
-                  <div key={note.id} className="px-4 py-3 border-b border-[#2A3441] hover:bg-[#1B2430] cursor-pointer transition-colors flex items-start gap-3">
+                {notifications.map((note) => (
+                  <div 
+                    key={note.id} 
+                    className={`px-4 py-3 border-b border-[#2A3441] hover:bg-[#1B2430] cursor-pointer transition-colors flex items-start gap-3 ${note.read ? 'opacity-60' : ''}`}
+                  >
                     <span className={`material-symbols-outlined text-[18px] mt-0.5 ${note.color}`}>{note.icon}</span>
                     <div className="flex flex-col flex-1">
-                      <span className="text-sm text-slate-200 font-medium leading-snug">{note.message}</span>
+                      <span className={`text-sm font-medium leading-snug ${note.read ? 'text-slate-400' : 'text-slate-200'}`}>{note.message}</span>
                       <span className="text-xs text-slate-500 mt-1">{note.time}</span>
                     </div>
+                    {!note.read && <span className="w-2 h-2 rounded-full bg-amber-500 mt-2 flex-shrink-0"></span>}
                   </div>
                 ))}
               </div>
               <div className="px-4 py-2 text-center">
-                <button type="button" className="text-xs text-slate-400 hover:text-amber-500 transition-colors w-full p-1">
+                <button 
+                  type="button" 
+                  className="text-xs text-slate-400 hover:text-amber-500 transition-colors w-full p-1"
+                  onClick={() => {
+                    setIsNotificationsOpen(false);
+                    setIsNotificationsModalOpen(true);
+                  }}
+                >
                   View all notifications
                 </button>
               </div>
@@ -143,6 +173,11 @@ export function Topbar({ title }) {
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
         user={user}
+      />
+      <NotificationsModal
+        isOpen={isNotificationsModalOpen}
+        onClose={() => setIsNotificationsModalOpen(false)}
+        notifications={notifications}
       />
     </header>
   );

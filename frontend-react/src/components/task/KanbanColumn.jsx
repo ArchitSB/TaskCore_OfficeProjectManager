@@ -13,6 +13,7 @@ export function KanbanColumn({
   activeDropdownStatus,
   setActiveDropdownStatus,
   badgeColor = 'bg-slate-800 text-slate-400',
+  isAdmin = false,
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuContainerRef = useRef(null);
@@ -129,45 +130,47 @@ export function KanbanColumn({
             {count}
           </span>
         </div>
-        <div className="relative" ref={menuContainerRef}>
-          <button
-            type="button"
-            onClick={toggleMenu}
-            className="p-1 text-slate-500 hover:text-slate-100 transition-colors"
-          >
-            <span className="material-symbols-outlined">more_horiz</span>
-          </button>
+        {isAdmin && (
+          <div className="relative" ref={menuContainerRef}>
+            <button
+              type="button"
+              onClick={toggleMenu}
+              className="p-1 text-slate-500 hover:text-slate-100 transition-colors"
+            >
+              <span className="material-symbols-outlined">more_horiz</span>
+            </button>
 
-          {isMenuOpen && (
-            <div className="absolute right-0 mt-2 w-44 rounded border border-[#2A3441] bg-[#121821] shadow-lg z-20 py-1">
-              <button
-                type="button"
-                onClick={() => handleRename()}
-                className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-[#1B2430] transition-colors"
-              >
-                Rename Column
-              </button>
-              <button
-                type="button"
-                onClick={() => handleClearTasks()}
-                className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-[#1B2430] transition-colors"
-              >
-                Clear All Tasks
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSort()}
-                className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-[#1B2430] transition-colors"
-              >
-                Sort Tasks
-              </button>
-            </div>
-          )}
-        </div>
+            {isMenuOpen && (
+              <div className="absolute right-0 mt-2 w-44 rounded border border-[#2A3441] bg-[#121821] shadow-lg z-20 py-1">
+                <button
+                  type="button"
+                  onClick={() => handleRename()}
+                  className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-[#1B2430] transition-colors"
+                >
+                  Rename Column
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleClearTasks()}
+                  className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-[#1B2430] transition-colors"
+                >
+                  Clear All Tasks
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSort()}
+                  className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-[#1B2430] transition-colors"
+                >
+                  Sort Tasks
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <div className="space-y-md min-h-[80px]">
         {tasks.map((task) => (
-          <TaskCard key={task.id} task={task} onDragStartTask={onDragStartTask} />
+          <TaskCard key={task.id} task={task} onDragStartTask={onDragStartTask} isAdmin={isAdmin} />
         ))}
       </div>
     </div>

@@ -50,22 +50,15 @@ export function useTasks() {
       setLoading(true);
       setError('');
       try {
-        const loadedProjects = await loadProjects();
-        
-        let projectIdToFetch = selectedProjectId;
-        if (!selectedProjectId && loadedProjects.length > 0) {
-          projectIdToFetch = loadedProjects[0]._id;
-          if (isActive) {
-            setSelectedProjectId(projectIdToFetch);
-          }
-        }
-
-        const mappedTasks = await loadTasks(projectIdToFetch);
+        await loadProjects();
+        const mappedTasks = await loadTasks(selectedProjectId);
 
         if (!isActive) return;
 
-        if (mappedTasks && mappedTasks.length >= 0) {
+        if (mappedTasks && mappedTasks.length > 0) {
           setTasks(mappedTasks);
+        } else {
+          console.warn("Skipping empty overwrite");
         }
       } catch (err) {
         if (isActive) {

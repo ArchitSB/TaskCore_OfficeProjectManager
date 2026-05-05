@@ -14,7 +14,7 @@ const notFoundHandler = (req, res) => {
 };
 
 const errorHandler = (err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
+  const statusCode = err.status || err.statusCode || 500;
 
   if (process.env.NODE_ENV !== 'test') {
     console.error(err);

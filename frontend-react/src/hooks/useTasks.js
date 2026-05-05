@@ -35,44 +35,55 @@ export function useTasks() {
     const response = await getProjectsRequest();
     const loadedProjects = response.data || [];
     setProjects(loadedProjects);
-
-    if (!selectedProjectId && loadedProjects.length > 0) {
-      setSelectedProjectId(loadedProjects[0]._id);
-    }
-  }, [selectedProjectId]);
+    return loadedProjects;
+  }, []);
 
   const loadTasks = useCallback(async (projectId = selectedProjectId) => {
-    setLoading(true);
-    setError('');
-
-    try {
-      const response = await getTasksRequest(projectId || '');
-      const mappedTasks = (response.data || []).map(toTaskView);
-      console.log("Tasks after fetch:", mappedTasks);
-      setTasks(mappedTasks);
-    } catch (apiError) {
-      setError(getApiErrorMessage(apiError, 'Unable to load tasks'));
-    } finally {
-      setLoading(false);
-    }
+    const response = await getTasksRequest(projectId || '');
+    return (response.data || []).map(toTaskView);
   }, [selectedProjectId]);
 
   useEffect(() => {
+    let isActive = true;
+
     const bootstrap = async () => {
+      setLoading(true);
+      setError('');
       try {
-        await loadProjects();
-      } catch (apiError) {
-        setError(getApiErrorMessage(apiError, 'Unable to load projects for tasks board'));
-        setLoading(false);
+        const loadedProjects = await loadProjects();
+        
+        let projectIdToFetch = selectedProjectId;
+        if (!selectedProjectId && loadedProjects.length > 0) {
+          projectIdToFetch = loadedProjects[0]._id;
+          if (isActive) {
+            setSelectedProjectId(projectIdToFetch);
+          }
+        }
+
+        const mappedTasks = await loadTasks(projectIdToFetch);
+
+        if (!isActive) return;
+
+        if (mappedTasks && mappedTasks.length >= 0) {
+          setTasks(mappedTasks);
+        }
+      } catch (err) {
+        if (isActive) {
+          setError(getApiErrorMessage(err, 'Unable to load board data'));
+        }
+      } finally {
+        if (isActive) {
+          setLoading(false);
+        }
       }
     };
 
     bootstrap();
-  }, [loadProjects]);
 
-  useEffect(() => {
-    loadTasks(selectedProjectId);
-  }, [selectedProjectId, loadTasks]);
+    return () => {
+      isActive = false;
+    };
+  }, [selectedProjectId, loadProjects, loadTasks]);
 
   const getTasksByStatus = useCallback((status) => tasks.filter((task) => task.status === status), [tasks]);
 
@@ -100,6 +111,19 @@ export function useTasks() {
     [projects]
   );
 
+  const reloadTasks = useCallback(async (projectId = selectedProjectId) => {
+    setLoading(true);
+    setError('');
+    try {
+      const mappedTasks = await loadTasks(projectId);
+      setTasks(mappedTasks);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Unable to reload tasks'));
+    } finally {
+      setLoading(false);
+    }
+  }, [loadTasks, selectedProjectId]);
+
   return {
     tasks,
     loading,
@@ -110,6 +134,6 @@ export function useTasks() {
     getTasksByStatus,
     updateTaskStatus,
     clearTasksByStatus,
-    reloadTasks: loadTasks,
+    reloadTasks,
   };
 }

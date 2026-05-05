@@ -179,19 +179,18 @@ const seedDatabase = async () => {
   console.log(`Users: ${users.length}, Projects: ${projects.length}, Tasks: ${tasksPayload.length}`);
 };
 
-seedDatabase()
-  .then(async () => {
-    await mongoose.connection.close();
-    process.exit(0);
-  })
-  .catch(async (error) => {
-    console.error('Seeding failed:', error.message);
-
-    try {
+if (process.env.NODE_ENV !== 'production') {
+  seedDatabase()
+    .then(async () => {
       await mongoose.connection.close();
-    } catch (closeError) {
-      console.error('Error closing DB connection:', closeError.message);
-    }
-
-    process.exit(1);
-  });
+      process.exit(0);
+    })
+    .catch(async (error) => {
+      console.error('Seeding error:', error);
+      await mongoose.connection.close();
+      process.exit(1);
+    });
+} else {
+  console.log('Seeder is disabled in production.');
+  process.exit(0);
+}

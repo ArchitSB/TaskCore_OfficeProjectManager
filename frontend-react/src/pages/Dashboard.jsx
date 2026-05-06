@@ -132,13 +132,13 @@ function Dashboard() {
             <div className="p-md border-b border-[#2A3441] flex justify-between items-center">
               <h3 className="font-h3 text-h3 text-on-surface">Submission Activity</h3>
             </div>
-            <div className="flex-1 p-md flex items-end gap-2">
+            <div className="flex-1 p-md flex items-end gap-2 h-full min-h-[200px]">
               {chartHeights.length === 0 && !loading && (
-                <div className="text-slate-500 text-sm">No activity yet.</div>
+                <div className="text-slate-500 text-sm w-full text-center pb-8">No activity yet.</div>
               )}
               {chartHeights.map((item) => (
-                <div key={item.date} className="flex-1 flex flex-col justify-end">
-                  <div className="bg-amber-500/80 rounded-t" style={{ height: item.height }}></div>
+                <div key={item.date} className="flex-1 flex flex-col justify-end h-full">
+                  <div className="bg-amber-500/80 rounded-t w-full transition-all duration-500" style={{ height: item.height }}></div>
                 </div>
               ))}
             </div>

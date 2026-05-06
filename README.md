@@ -2,6 +2,11 @@
 
 **TaskCore** is a modern, production-ready project and task management application designed for engineering and cross-functional teams. Built with the MERN stack (MongoDB, Express, React, Node.js), it delivers a sleek, dark-themed UI with powerful features to streamline workflows, track team productivity, and manage complex projects effortlessly.
 
+### 🌐 Live Demo
+**[task-core-office-project-manager.vercel.app](https://task-core-office-project-manager.vercel.app/)**
+
+> ⚠️ **Important Note:** The backend is hosted on Render's free tier. If the server has been inactive, it spins down to save resources. When you first open the link, **data fetching may take approximately 1 minute** while the backend wakes up. Please be patient during the initial load!
+
 ---
 
 ## 📸 Application Screenshots
